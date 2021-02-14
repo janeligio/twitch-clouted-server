@@ -1,11 +1,17 @@
 {
-  "name": "server",
+  "name": "twitch-clouted-server",
   "version": "1.0.0",
   "description": "API for getting clouted viewers of live twitch channel.",
   "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "twitch",
+    "clout",
+    "twitch-viewers"
+  ],
   "author": "Jan Iverson Eligio",
   "license": "ISC",
   "dependencies": {
@@ -13,5 +19,8 @@
     "axios-retry": "^3.1.9",
     "express": "^4.17.1",
     "lodash": "^4.17.20"
+  },
+  "engines": {
+    "node": "12.x"
   }
 }
