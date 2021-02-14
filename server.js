@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const axios = require('axios');
 const axiosRetry = require ('axios-retry');
 const _ = require('lodash');
@@ -6,6 +7,7 @@ const _ = require('lodash');
 axiosRetry(axios, { retries: 5});
 
 const app = express();
+app.use(cors());    // Enable all CORS Requests
 
 const ACCESS_TOKEN = 'b93ad5dbt1pevk1wctcz6xk3sy5r0m';
 const CLIENT_ID = '2d752weo9dt2sil0up1bxu767s6wq9';
