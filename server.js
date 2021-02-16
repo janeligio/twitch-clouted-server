@@ -15,7 +15,7 @@ let SUCCESSFUL_REQUESTS_LOG = 0;
 const port = process.env.PORT || 8080;
 
 // Need access token to make requests
-if(!process.env.ACCESS_TOKEN) {
+if(!process.env.ACCESS_TOKEN || process.env.ACCESS_TOKEN === 'null') {
     console.log("Generating token.")
     generateToken().then(response => {
         process.env.ACCESS_TOKEN = response.data.access_token;
