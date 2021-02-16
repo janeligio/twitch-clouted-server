@@ -9,20 +9,26 @@ axiosRetry(axios, { retries: 5});
 const app = express();
 app.use(cors());    // Enable all CORS Requests
 
-const ACCESS_TOKEN = 'b93ad5dbt1pevk1wctcz6xk3sy5r0m';
-const CLIENT_ID = '2d752weo9dt2sil0up1bxu767s6wq9';
-
 let FAILED_REQUESTS_LOG = 0;
 let SUCCESSFUL_REQUESTS_LOG = 0;
-/*
-  data: {
-    access_token: 'b93ad5dbt1pevk1wctcz6xk3sy5r0m',
-    expires_in: 4867247,
-    token_type: 'bearer'
-  }
-*/
 
 const port = process.env.PORT || 8080;
+
+// Need access token to make requests
+if(!process.env.ACCESS_TOKEN) {
+    console.log("Generating token.")
+    generateToken().then(response => {
+        process.env.ACCESS_TOKEN = response.data.access_token;
+        console.log(`Generated token: ${process.env.ACCESS_TOKEN}`);
+        let today = getDate();
+        today = addDays(today, 30);
+        process.env.EXPIRE_DATE = today;
+        console.log(`New token expires on ${process.env.EXPIRE_DATE}`);
+    }).catch(err => {
+        console.log("Error generating token:");
+        console.log(err);
+    });
+}
 
 app.listen(port, () => {
     console.log(`App listening on http://localhost:${port}`);
@@ -35,6 +41,21 @@ app.get('/', (req, res) => {
 app.get('/:channel/', (req, res) => {
     let channel = req.params.channel;
     let minimum = parseInt(req.query.minimum) || 1000; // If limit is not specified
+
+    if(!checkValidToken) {
+        console.log("Generating token.")
+        generateToken().then(response => {
+            process.env.ACCESS_TOKEN = response.data.access_token;
+            console.log(`Generated token: ${process.env.ACCESS_TOKEN}`);
+            let today = getDate();
+            today = addDays(today, 30);
+            process.env.EXPIRE_DATE = today;
+            console.log(`New token expires on ${process.env.EXPIRE_DATE}`);
+        }).catch(err => {
+            console.log("Error generating token:");
+            console.log(err);
+        });
+    }
 
     if(!channel) {
         res.send("Must specify channel.");
@@ -84,7 +105,6 @@ function getCloutedViewers(channel, minimum) {
     // Get an array of user IDs from chatters
     // This promise gets resolved when all promises are resolved
     let chatterIdsPromises = chatterPromise.then(res => {
-        // const ACCESS_TOKEN = 'b93ad5dbt1pevk1wctcz6xk3sy5r0m';
         const API = 'https://api.twitch.tv/helix/users?';
 
         // obj: { chatter_count, vips, moderators, staff, admins, viewers }
@@ -106,8 +126,8 @@ function getCloutedViewers(channel, minimum) {
                 method: 'get',
                 url: `${API}${params}`,
                 headers: {
-                    Authorization: `Bearer ${ACCESS_TOKEN}`,
-                    "Client-Id": CLIENT_ID
+                    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+                    "Client-Id": process.env.CLIENT_ID
                 }
             }));
         }
@@ -140,7 +160,7 @@ function getCloutedViewers(channel, minimum) {
                 timeout: 5000,
                 headers: {
                     Accept: 'application/vnd.twitchtv.v5+json',
-                    "Client-ID": CLIENT_ID
+                    "Client-ID": process.env.CLIENT_ID
                 },
             }).then(res => {
                 SUCCESSFUL_REQUESTS_LOG++;
@@ -179,4 +199,30 @@ function getChatters(channel) {
             });
         }).catch(err => console.log(err))
     });
+}
+
+function generateToken() {
+    const endpoint = `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`;
+    return axios({
+        method: 'post',
+        url: endpoint
+    });
+}
+
+function getDate() {
+    return new Date(Date.now());
+}
+
+function addDays(date, days) {
+    let result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+}
+
+function checkValidToken() {
+    if(Date.now() < process.env.EXPIRE_DATE) {
+        return true;
+    } else {
+        return false;
+    }
 }
